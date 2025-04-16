@@ -1,6 +1,7 @@
+// src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, User as UserIcon, Key } from 'lucide-react'; // Renamed User to UserIcon to avoid naming conflict
+import { LogIn, User, Key } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
@@ -9,25 +10,25 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { signIn } = useAuth(); // Get the signIn function from context
+  const { signIn } = useAuth(); // Get signIn function from context
+  // No need to navigate here directly, AuthContext handles it
 
-  const handleSubmit = async (e: React.FormEvent) => { // Make handleSubmit async
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     // Call the actual signIn function from AuthContext
     const { error } = await signIn(email, password);
 
-    setIsLoading(false);
+    // Error handling is done within the signIn function (shows toast)
+    // Success handling (toast and navigation) is done within the AuthContext's onAuthStateChange listener
 
-    // AuthContext already handles navigation and success toast on SIGNED_IN event
-    // It also shows error toasts if 'signIn' itself fails.
-    // So, we don't need to navigate or show success toast here explicitly.
-    // If there's an error, it would have been toasted by AuthContext's signIn.
-    // if (!error) {
-      // Navigation is handled by onAuthStateChange in AuthContext
-    // }
+    // We only need to stop the loading indicator if there was an error here,
+    // otherwise, navigation will happen via context.
+    if (error) {
+       setIsLoading(false);
+    }
+    // No need to set isLoading(false) on success, as the component might unmount due to navigation
   };
 
   return (
@@ -46,8 +47,7 @@ const LoginPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                    {/* Use the renamed UserIcon */}
-                    <UserIcon className="h-5 w-5 text-muted-foreground" />
+                    <User className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <input
                     type="email"
@@ -77,9 +77,10 @@ const LoginPage: React.FC = () => {
                   />
                 </div>
                 <div className="text-right">
-                  <Link to="/forgot-password" className="text-sm text-clay-600 hover:text-clay-800 transition-colors">
+                  {/* TODO: Implement forgot password functionality if needed */}
+                  {/* <Link to="/forgot-password" className="text-sm text-clay-600 hover:text-clay-800 transition-colors">
                     Forgot Password?
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
 
@@ -89,7 +90,7 @@ const LoginPage: React.FC = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="animate-pulse">Logging in...</span>
+                  <span className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-white rounded-full"></span> // Better loading spinner
                 ) : (
                   <>
                     <LogIn className="h-5 w-5 mr-2" />
@@ -98,8 +99,10 @@ const LoginPage: React.FC = () => {
                 )}
               </button>
             </form>
-             {/* Optional: Add Google Sign In Button */}
-             {/* <button onClick={handleGoogleSignIn} disabled={isLoading}>Sign in with Google</button> */}
+            {/* Optional: Add Google Sign In Button Here */}
+            {/* You would need to call signInWithGoogle from useAuth() */}
+            {/* Example: <button onClick={() => signInWithGoogle()} disabled={isLoading}>Sign In with Google</button> */}
+
           </CardContent>
 
           <CardFooter className="border-t px-6 py-4">
