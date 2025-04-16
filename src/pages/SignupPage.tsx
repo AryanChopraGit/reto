@@ -1,6 +1,7 @@
+// src/pages/SignupPage.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, User as UserIcon, Mail, Lock } from 'lucide-react'; // Renamed User to UserIcon
+import { UserPlus, User, Mail, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
@@ -11,10 +12,10 @@ const SignupPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { signUp } = useAuth(); // Get the signUp function from context
+  const { signUp } = useAuth(); // Get signUp function from context
+  // No need for navigate here directly, AuthContext handles it (or user waits for confirmation email)
 
-  const handleSubmit = async (e: React.FormEvent) => { // Make handleSubmit async
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -22,10 +23,10 @@ const SignupPage: React.FC = () => {
       return;
     }
 
-    // Basic password strength check (example)
+    // Basic password strength check (example: minimum 6 characters)
     if (password.length < 6) {
-        toast.error("Password must be at least 6 characters long");
-        return;
+      toast.error("Password must be at least 6 characters long");
+      return;
     }
 
     setIsLoading(true);
@@ -33,14 +34,21 @@ const SignupPage: React.FC = () => {
     // Call the actual signUp function from AuthContext
     const { error } = await signUp(email, password, name);
 
-    setIsLoading(false);
+    // Error handling is done within the signUp function (shows toast)
+    // Success handling (toast and potential navigation if auto-login) is done within the AuthContext
+    // Or the user is told to check their email
 
-    // AuthContext handles success/info toast (for email confirmation)
-    // and navigation on SIGNED_IN event (if auto-login occurs).
-    // If email confirmation is required, the user stays on the page (or you could navigate them somewhere else).
-    // if (!error && !data.session) { // Or however Supabase indicates confirmation needed
-    //   navigate('/check-email'); // Optional: redirect to a specific page
-    // }
+    // We only need to stop loading indicator if there was an error here,
+    // otherwise navigation/state change will happen via context.
+    if (error) {
+      setIsLoading(false);
+    }
+    // If signup requires email confirmation, we stay on the page, so stop loading
+    // Check Supabase settings if "Confirm email" is enabled.
+    // Let's assume it might require confirmation, so we stop loading regardless on success too for now.
+    // A small delay might be good before stopping loading on success to allow context to potentially navigate
+    setTimeout(() => setIsLoading(false), 500);
+
   };
 
   return (
@@ -59,8 +67,7 @@ const SignupPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                     {/* Use the renamed UserIcon */}
-                    <UserIcon className="h-5 w-5 text-muted-foreground" />
+                    <User className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <input
                     type="text"
@@ -69,7 +76,7 @@ const SignupPage: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-clay-600 focus:border-transparent"
                     required
-                    disabled={isLoading} // Disable input while loading
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -86,7 +93,7 @@ const SignupPage: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-clay-600 focus:border-transparent"
                     required
-                    disabled={isLoading} // Disable input while loading
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -98,12 +105,12 @@ const SignupPage: React.FC = () => {
                   </div>
                   <input
                     type="password"
-                    placeholder="Password (min. 6 characters)" // Added hint
+                    placeholder="Password (min. 6 characters)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-clay-600 focus:border-transparent"
                     required
-                    disabled={isLoading} // Disable input while loading
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -120,18 +127,19 @@ const SignupPage: React.FC = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-clay-600 focus:border-transparent"
                     required
-                    disabled={isLoading} // Disable input while loading
+                    disabled={isLoading}
                   />
                 </div>
               </div>
 
+              {/* Keep terms checkbox for UI, but actual enforcement depends on your needs */}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   id="terms"
                   className="h-4 w-4 rounded border-gray-300 focus:ring-clay-600"
                   required
-                  disabled={isLoading} // Disable input while loading
+                  disabled={isLoading}
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground">
                   I agree to the{' '}
@@ -151,7 +159,7 @@ const SignupPage: React.FC = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="animate-pulse">Creating account...</span>
+                   <span className="animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-white rounded-full"></span> // Better loading spinner
                 ) : (
                   <>
                     <UserPlus className="h-5 w-5 mr-2" />
@@ -160,6 +168,9 @@ const SignupPage: React.FC = () => {
                 )}
               </button>
             </form>
+             {/* Optional: Add Google Sign In Button Here */}
+             {/* You would need to call signInWithGoogle from useAuth() */}
+             {/* Example: <button onClick={() => signInWithGoogle()} disabled={isLoading}>Sign Up with Google</button> */}
           </CardContent>
 
           <CardFooter className="border-t px-6 py-4">
